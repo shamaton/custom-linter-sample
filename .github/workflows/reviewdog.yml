@@ -1,0 +1,48 @@
+name: Reviewdog
+
+on: pull_request
+
+jobs:
+  runner:
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
+    if: github.event_name == 'pull_request'
+    name: reviewdog on Pull Request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: go version
+        id: go-ver
+        run: |
+          GO_VERSION=`sed -ne 's/^golang \(.*\)/\1/p' .tool-versions`
+
+          echo "go version is ${GO_VERSION}"
+          echo "::set-output name=version::${GO_VERSION}"
+
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ steps.go-ver.outputs.version }}
+
+      - name: Build linter
+        run: |
+          go build -o ml ./mylinter/cmd/mylinter
+
+      - name: Setup reviewdog
+        uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: latest
+
+      - name: Run reviewdog (github-pr-review with tee)
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Remove Go Problem Matchers [1] as it reports duplicate results with
+          # reviewdog.
+          # [1]: https://github.com/actions/toolkit/blob/master/docs/commands.md#problem-matchers
+          echo "::remove-matcher owner=go::"
+          go vet -vettool ml ./... | reviewdog -f=golint -name=golint-pr-review -reporter=github-pr-review -tee
