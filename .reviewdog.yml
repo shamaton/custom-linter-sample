@@ -1,0 +1,5 @@
+runner:
+  mylinter:
+    cmd: go vet -vettool ml
+    format: golint
+    level: warning

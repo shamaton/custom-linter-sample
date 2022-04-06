@@ -45,4 +45,4 @@ jobs:
           # reviewdog.
           # [1]: https://github.com/actions/toolkit/blob/master/docs/commands.md#problem-matchers
           echo "::remove-matcher owner=go::"
-          go vet -vettool ml ./... | reviewdog -f=golint -name=golint-pr-review -reporter=github-pr-review -tee
+          reviewdog -conf=./.reviewdog.yml -reporter=github-pr-review
